@@ -205,6 +205,7 @@ fn create_sheet_format_requests(
     let weeks = (offset + days as usize).div_ceil(7);
     let block = template.tasks.len() + 1;
     let mut requests = Vec::new();
+    let mut celebration_ranges = Vec::new();
     for week in 0..weeks {
         let header = 1 + week * block;
         for (task_idx, task) in template.tasks.iter().enumerate() {
@@ -227,6 +228,38 @@ fn create_sheet_format_requests(
                     "fields": "userEnteredFormat.backgroundColor"
                 }
             }).to_string()).expect("valid repeatCell request"));
+
+            requests.push(
+                serde_json::from_str(
+                    &json!({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": row,
+                                "endRowIndex": row + 1,
+                                "startColumnIndex": 8,
+                                "endColumnIndex": 9
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "horizontalAlignment": "CENTER",
+                                    "verticalAlignment": "MIDDLE"
+                                }
+                            },
+                            "fields": "userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment"
+                        }
+                    })
+                    .to_string(),
+                )
+                .expect("valid celebration alignment request"),
+            );
+            celebration_ranges.push(json!({
+                "sheetId": sheet_id,
+                "startRowIndex": row,
+                "endRowIndex": row + 1,
+                "startColumnIndex": 8,
+                "endColumnIndex": 9
+            }));
 
             for weekday in 0..7 {
                 let day_number = (week * 7 + weekday + 1) as i32 - offset as i32;
@@ -257,5 +290,32 @@ fn create_sheet_format_requests(
             }
         }
     }
+    requests.push(
+        serde_json::from_str(
+            &json!({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": celebration_ranges,
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": "🎉"}]
+                            },
+                            "format": {
+                                "backgroundColor": {
+                                    "red": 0.85,
+                                    "green": 0.92,
+                                    "blue": 0.83
+                                }
+                            }
+                        }
+                    },
+                    "index": 0
+                }
+            })
+            .to_string(),
+        )
+        .expect("valid celebration highlighting request"),
+    );
     requests
 }
