@@ -20,15 +20,17 @@ The key is read locally and must not be committed. The account needs access to t
 ```sh
 cargo run -- show
 cargo run -- show --week 2026-10-08
+cargo run -- complete --task Physical
 cargo run -- complete --date 2026-10-08 --task Physical
 cargo run -- complete --date 2026-10-08 --task Physical --uncheck
-cargo run -- create-month --month 2026-11 --template profile.example.json
+cargo run -- month-init --template profile.example.json
+cargo run -- month-init --month 2026-11 --template profile.example.json
 ```
 
-`show` defaults to the current week, Monday through Sunday. `complete` accepts the task name with or without its trailing emoji. Month tabs use English `Month-Year` names such as `October-2026`. The CLI refuses to replace an existing tab.
+`show` defaults to the current week, Monday through Sunday, and prints a compact table. `complete` defaults to today; pass `--date` to choose another day. It accepts the task name with or without its trailing emoji. `month-init` defaults to the current month; pass `--month YYYY-MM` to choose another. Month tabs use English `Month-Year` names such as `October-2026`. The CLI refuses to replace an existing tab.
 
 ## Profile Template
 
-Pass a JSON file containing a `tasks` array. Each task has a unique `name`, optional `emoji`, hex background `color` (`#RRGGBB`), and a `weekly_target` from 0 to 7. New month tabs get one row per task per week, native checkboxes for in-month dates, and a `🎉` marker in column K when that task's weekly target is met. See [profile.example.json](profile.example.json).
+Pass a JSON file containing a `tasks` array. Each task has a unique `name`, optional `emoji`, hex background `color` (`#RRGGBB`), and a `weekly_target` from 0 to 7. New month tabs get one row per task per week, native checkboxes for in-month dates, a task color across the label and weekday cells, and a `🎉` marker in column I when that task's weekly target is met. The weekday header row and task-name column stay frozen while scrolling. See [profile.example.json](profile.example.json).
 
-The implementation follows the visible layout from the supplied screenshot: weekday columns B:H, labels in A, and the celebration marker in K. It leaves hidden columns I:J untouched. Existing workbook tabs should use the same month-year naming and weekly row layout for `show` and `complete` to locate cells.
+The implementation uses weekday columns B:H, labels in A, and the celebration marker in I. Existing workbook tabs should use the same month-year naming and weekly row layout for `show` and `complete` to locate cells.

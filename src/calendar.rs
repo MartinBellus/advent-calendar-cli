@@ -78,42 +78,52 @@ pub(crate) async fn show_week(hub: &Hub, spreadsheet_id: &str, selected: NaiveDa
         );
     };
 
-    println!("{} (week of {})", title, monday);
-    print!("{:<22}", "Task");
+    let week_rows: Vec<_> = values
+        .iter()
+        .skip(header_row + 1)
+        .take_while(|row| !row_dates(row, year, month).iter().any(Option::is_some))
+        .filter_map(|row| {
+            row.first()
+                .filter(|label| !label.trim().is_empty())
+                .map(|label| (row, label))
+        })
+        .collect();
+    if week_rows.is_empty() {
+        bail!("No task rows found for the week of {monday} in tab '{title}'");
+    }
+
+    let task_width = week_rows
+        .iter()
+        .map(|(_, label)| label.chars().count())
+        .max()
+        .unwrap_or(4)
+        .max(4);
+    println!("{title} · Week of {}", monday.format("%A, %B %-d, %Y"));
+    print!("{:<task_width$} |", "Task");
     for date in &target_dates {
         print!(
-            " {:>10}",
-            format!(
-                "{} {}",
-                weekday_label(date.weekday()),
-                date.format("%d.%m.")
-            )
+            " {:^7}|",
+            format!("{} {}", weekday_label(date.weekday()), date.format("%d"))
         );
     }
     println!();
+    print!("{}-+", "-".repeat(task_width));
+    for _ in &target_dates {
+        print!("--------+");
+    }
+    println!();
 
-    let mut printed = 0usize;
-    for row in values.iter().skip(header_row + 1) {
-        if row_dates(row, year, month).iter().any(Option::is_some) {
-            break;
-        }
-        let Some(label) = row.first().filter(|label| !label.trim().is_empty()) else {
-            continue;
-        };
-        print!("{label:<22}");
+    for (row, label) in week_rows {
+        print!("{label:<task_width$} |", label = label.trim());
         for target in &target_dates {
             let checked = dates
                 .iter()
                 .position(|date| *date == Some(*target))
                 .and_then(|day_col| row.get(day_col + 1))
                 .is_some_and(|value| value.eq_ignore_ascii_case("TRUE") || value == "✓");
-            print!(" {:>10}", if checked { "✓" } else { "·" });
+            print!(" {:^7}|", if checked { "✓" } else { "·" });
         }
         println!();
-        printed += 1;
-    }
-    if printed == 0 {
-        bail!("No task rows found for the week of {monday} in tab '{title}'");
     }
     Ok(())
 }

@@ -4,7 +4,7 @@ mod create;
 mod sheets;
 
 use anyhow::{Context, Result};
-use chrono::Local;
+use chrono::{Datelike, Local};
 use clap::Parser;
 use cli::{Cli, Command};
 use sheets::connect;
@@ -30,8 +30,15 @@ async fn main() -> Result<()> {
             date,
             task,
             uncheck,
-        } => calendar::set_completion(&sheets, &spreadsheet_id, date, &task, !uncheck).await,
-        Command::CreateMonth { month, template } => {
+        } => {
+            let date = date.unwrap_or_else(|| Local::now().date_naive());
+            calendar::set_completion(&sheets, &spreadsheet_id, date, &task, !uncheck).await
+        }
+        Command::MonthInit { month, template } => {
+            let month = month.unwrap_or_else(|| {
+                let today = Local::now().date_naive();
+                (today.year(), today.month())
+            });
             create::create_month(&sheets, &spreadsheet_id, month, &template).await
         }
     }

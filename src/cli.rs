@@ -23,19 +23,20 @@ pub(crate) enum Command {
     },
     /// Check or uncheck a task for a date.
     Complete {
+        /// Date to update (defaults to today).
         #[arg(long)]
-        date: NaiveDate,
+        date: Option<NaiveDate>,
         #[arg(long)]
         task: String,
         /// Clear the checkbox instead of checking it.
         #[arg(long)]
         uncheck: bool,
     },
-    /// Create a month tab using a JSON profile template.
-    CreateMonth {
-        /// Month to create (YYYY-MM).
+    /// Initialize a month tab using a JSON profile template.
+    MonthInit {
+        /// Month to create (YYYY-MM; defaults to the current month).
         #[arg(long, value_parser = parse_month)]
-        month: (i32, u32),
+        month: Option<(i32, u32)>,
         /// JSON file containing task names, emojis, colors, and weekly targets.
         #[arg(long)]
         template: PathBuf,

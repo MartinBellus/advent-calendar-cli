@@ -7,7 +7,7 @@ use google_sheets4::api::{BatchUpdateSpreadsheetRequest, ValueRange};
 use serde_json::{Value, json};
 use std::{fs, path::PathBuf};
 
-const COLUMN_COUNT: usize = 11; // A:K; hidden columns I and J are retained.
+const COLUMN_COUNT: usize = 11; // A:K, preserving the existing sheet width.
 
 pub(crate) async fn create_month(
     hub: &Hub,
@@ -44,7 +44,9 @@ pub(crate) async fn create_month(
                     "title": title,
                     "gridProperties": {
                         "rowCount": 100,
-                        "columnCount": COLUMN_COUNT
+                        "columnCount": COLUMN_COUNT,
+                        "frozenRowCount": 1,
+                        "frozenColumnCount": 1
                     }
                 }
             }
@@ -101,7 +103,7 @@ pub(crate) async fn create_month(
                     grid[row][weekday + 1] = Value::Bool(false);
                 }
             }
-            grid[row][10] = Value::String(format!(
+            grid[row][8] = Value::String(format!(
                 "=IF(COUNTIF(B{}:H{},TRUE)>={},\"🎉\",\"\")",
                 row + 1,
                 row + 1,
@@ -215,7 +217,7 @@ fn create_sheet_format_requests(
                         "startRowIndex": row,
                         "endRowIndex": row + 1,
                         "startColumnIndex": 0,
-                        "endColumnIndex": 1
+                    "endColumnIndex": 8
                     },
                     "cell": {
                         "userEnteredFormat": {
