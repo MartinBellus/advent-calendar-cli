@@ -27,7 +27,7 @@ cargo run -- month-init --template profile.example.json
 cargo run -- month-init --month 2026-11 --template profile.example.json
 ```
 
-`show` defaults to the current week, Monday through Sunday, and prints a compact table. `complete` defaults to today; pass `--date` to choose another day. It accepts the task name with or without its trailing emoji. `month-init` defaults to the current month; pass `--month YYYY-MM` to choose another. Month tabs use English `Month-Year` names such as `October-2026`. The CLI refuses to replace an existing tab.
+`show` defaults to the current week, Monday through Sunday, and prints a compact table. `complete` defaults to today; pass `--date` to choose another day. Task matching is case-insensitive and accepts the task name with or without its trailing emoji. `month-init` defaults to the current month; pass `--month YYYY-MM` to choose another. Month tabs use English `Month-Year` names such as `October-2026`. The CLI refuses to replace an existing tab.
 
 ## Profile Template
 

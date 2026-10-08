@@ -213,10 +213,10 @@ fn column_label(mut column: usize) -> String {
 }
 
 fn labels_match(label: &str, requested: &str) -> bool {
-    let label = label.trim();
-    let requested = requested.trim();
+    let label = label.trim().to_lowercase();
+    let requested = requested.trim().to_lowercase();
     label == requested
-        || label.strip_prefix(requested).is_some_and(|suffix| {
+        || label.strip_prefix(&requested).is_some_and(|suffix| {
             suffix.chars().next().is_some_and(char::is_whitespace)
                 && suffix
                     .trim()
