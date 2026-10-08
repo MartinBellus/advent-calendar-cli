@@ -229,6 +229,11 @@ fn create_sheet_format_requests(
         for (task_idx, task) in template.tasks.iter().enumerate() {
             let row = header + task_idx + 1;
             let color = parse_color(&task.color).expect("template colors validated");
+            let day_color = (
+                (color.0 + 1.0) / 2.0,
+                (color.1 + 1.0) / 2.0,
+                (color.2 + 1.0) / 2.0,
+            );
             requests.push(serde_json::from_str(&json!({
                 "repeatCell": {
                     "range": {
@@ -236,40 +241,17 @@ fn create_sheet_format_requests(
                         "startRowIndex": row,
                         "endRowIndex": row + 1,
                         "startColumnIndex": 0,
-                    "endColumnIndex": 8
+                        "endColumnIndex": 1
                     },
                     "cell": {
                         "userEnteredFormat": {
-                            "backgroundColor": {"red": color.0, "green": color.1, "blue": color.2}
+                            "backgroundColor": {"red": color.0, "green": color.1, "blue": color.2},
+                            "textFormat": {"bold": true}
                         }
                     },
-                    "fields": "userEnteredFormat.backgroundColor"
+                    "fields": "userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.bold"
                 }
             }).to_string()).expect("valid repeatCell request"));
-
-            requests.push(
-                serde_json::from_str(
-                    &json!({
-                        "repeatCell": {
-                            "range": {
-                                "sheetId": sheet_id,
-                                "startRowIndex": row,
-                                "endRowIndex": row + 1,
-                                "startColumnIndex": 0,
-                                "endColumnIndex": 1
-                            },
-                            "cell": {
-                                "userEnteredFormat": {
-                                    "textFormat": {"bold": true}
-                                }
-                            },
-                            "fields": "userEnteredFormat.textFormat.bold"
-                        }
-                    })
-                    .to_string(),
-                )
-                .expect("valid bold task label request"),
-            );
 
             requests.push(
                 serde_json::from_str(
@@ -306,6 +288,33 @@ fn create_sheet_format_requests(
             for weekday in 0..7 {
                 let day_number = (week * 7 + weekday + 1) as i32 - offset as i32;
                 if (1..=days as i32).contains(&day_number) {
+                    requests.push(
+                        serde_json::from_str(
+                            &json!({
+                                "repeatCell": {
+                                    "range": {
+                                        "sheetId": sheet_id,
+                                        "startRowIndex": row,
+                                        "endRowIndex": row + 1,
+                                        "startColumnIndex": weekday + 1,
+                                        "endColumnIndex": weekday + 2
+                                    },
+                                    "cell": {
+                                        "userEnteredFormat": {
+                                            "backgroundColor": {
+                                                "red": day_color.0,
+                                                "green": day_color.1,
+                                                "blue": day_color.2
+                                            }
+                                        }
+                                    },
+                                    "fields": "userEnteredFormat.backgroundColor"
+                                }
+                            })
+                            .to_string(),
+                        )
+                        .expect("valid weekday tint request"),
+                    );
                     requests.push(
                         serde_json::from_str(
                             &json!({
