@@ -15,6 +15,18 @@ pub(crate) struct Cli {
 }
 #[derive(Subcommand)]
 pub(crate) enum Command {
+    /// Save spreadsheet and authentication settings for this user.
+    Setup {
+        /// Google Sheets ID from the spreadsheet URL.
+        #[arg(long)]
+        spreadsheet_id: String,
+        /// Google OAuth desktop client JSON file.
+        #[arg(long)]
+        oauth_client_secret: Option<PathBuf>,
+        /// Service account JSON key for automation or a shared calendar identity.
+        #[arg(long)]
+        service_account_key: Option<PathBuf>,
+    },
     /// Display a week (defaults to the current week).
     Show {
         /// Any date in the week to display (YYYY-MM-DD).
@@ -37,9 +49,9 @@ pub(crate) enum Command {
         /// Month to create (YYYY-MM; defaults to the current month).
         #[arg(long, value_parser = parse_month)]
         month: Option<(i32, u32)>,
-        /// JSON file containing task names, emojis, colors, and weekly targets.
+        /// JSON profile (defaults to the user template in the config directory).
         #[arg(long)]
-        template: PathBuf,
+        template: Option<PathBuf>,
     },
 }
 #[derive(Deserialize)]

@@ -1,54 +1,65 @@
-# Google Sheets Advent Calendar CLI — Specification
+# Advent Calendar CLI Specification
 
 ## Purpose
 
-Provide a command-line interface for viewing and updating an existing Google Sheets calendar of daily goals. The CLI should also create month-specific sheets from task profile templates. This document describes the initial MVP behavior and its layout assumptions.
+Provide an installable, per-user command-line app for viewing and updating a Google Sheets habit calendar. It can initialize month tabs from editable JSON task profiles.
 
-## Users and Core Workflows
+## Installation
 
-1. **View progress:** retrieve the current calendar state and display days, tasks, and completion status in a readable terminal format.
-2. **Complete a goal:** identify a date and task; check or uncheck that goal in the existing spreadsheet; report success or a useful error.
-3. **Create a month:** create a new month sheet from a task profile template without changing prior months.
+- The installed executable is named `advent-calendar`.
+- Developers can install the current checkout with `cargo install --path . --locked`.
+- Cargo places installed executables in its binary directory, normally `~/.cargo/bin` when installed through rustup. That directory must be on `PATH`.
+- Prebuilt release packages may be added later; they are not required for local Cargo installation.
 
-## Proposed CLI
+## First-Time Setup and Configuration
 
-- `advent-calendar show [--week YYYY-MM-DD]` — display the current Monday–Sunday week by default; an explicit date selects its week.
-- `advent-calendar complete --date YYYY-MM-DD --task TASK [--uncheck]` — check the task for that date, or clear it with `--uncheck`. Reject missing and ambiguous matches.
-- `advent-calendar create-month --month YYYY-MM --template FILE` — create a month tab from a JSON template containing task names, emojis, colors, and weekly targets.
-- `advent-calendar --help` — document commands, examples, and configuration.
+Run `advent-calendar setup --spreadsheet-id ID` with exactly one of `--oauth-client-secret FILE` or `--service-account-key FILE`.
 
-## Observed Sheet Layout
+- OAuth is the preferred mode for a person using the app on their own computer. The user supplies a Google OAuth desktop client JSON file; the first Sheets operation starts the installed-app browser flow and requests access as that Google user.
+- Service-account credentials remain available for automation or shared-calendar identities. The spreadsheet must be shared with the service account, with edit access for write operations.
+- Setup stores the spreadsheet ID and credential-file path, not credential contents.
+- `GOOGLE_SHEETS_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_SERVICE_ACCOUNT_KEY` environment variables override corresponding saved settings. The app does not implicitly load `.env` files.
+- Configuration and user templates live in the platform user configuration directory. On Linux this is `$XDG_CONFIG_HOME/advent-calendar` or `~/.config/advent-calendar` when `XDG_CONFIG_HOME` is unset. On macOS use `~/Library/Application Support/advent-calendar`; on Windows use `%APPDATA%\\advent-calendar`.
+- OAuth refresh tokens are stored in the operating system credential store (macOS Keychain, Windows Credential Manager, or Linux Secret Service). Linux users need an available Secret Service provider. The OAuth client file and service-account key stay at their original paths and must not be committed.
 
-The provided screenshot shows a month calendar arranged as a grid:
+## Templates
 
-- Column A contains six colored labels: “Acarizax 💊”, “Physical 🏃”, “Cooking 🍲”, “Sara ❤️”, “Meditation 🧘”, and “Study 🧠”. They appear to be goal/task categories, but whether any label is a profile needs confirmation.
-- Columns B through H represent Monday through Sunday. Each weekly block has a date row followed by one row per label. Dates appear as day and month (for example, `31.8.`); checkboxes at their intersections show completion.
-- Weekly blocks are stacked vertically. Some weekday cells are blank at the start or end of the month. The screenshot does not show the tab name or year.
-- Column K contains celebration emoji indicating whether the weekly completion target was met. The target comes from the profile template. Columns I and J appear hidden; the CLI should leave them untouched unless their purpose is established.
+- The app ships with a built-in starter profile based on `profile.example.json`.
+- On first setup or first use, the starter profile is copied to `<config-dir>/templates/default.json` only if the user has not already created it.
+- `month-init --template FILE` uses the specified file. If `--template` is omitted, it uses the user's `templates/default.json`.
+- User edits to templates are preserved across app upgrades.
+- A profile contains a `tasks` array. Each task has a unique `name`, optional `emoji`, `color` in `#RRGGBB` format, and `weekly_target` from 0 to 7.
 
-Profiles are templates specifying task names, emojis, background colors, and each task's weekly completion target. Months are separate tabs named in English `Month-Year` format (for example, `October-2026`). New tabs are generated from the supplied profile template. The MVP expects existing tabs to use this naming and the visible weekly grid layout.
+## CLI Workflows
 
-## Google Sheets Integration
+- `advent-calendar setup --spreadsheet-id ID --oauth-client-secret FILE` saves the spreadsheet and OAuth client configuration.
+- `advent-calendar setup --spreadsheet-id ID --service-account-key FILE` saves service-account configuration.
+- `advent-calendar show [--week YYYY-MM-DD]` displays the Monday-through-Sunday week containing the date. It defaults to the current local week.
+- `advent-calendar complete --task TASK [--date YYYY-MM-DD] [--uncheck]` checks a task for today or the selected date. Task matching is case-insensitive and accepts a task label with or without its trailing emoji. Missing and ambiguous matches fail without writing.
+- `advent-calendar month-init [--month YYYY-MM] [--template FILE]` initializes a new tab. It defaults to the current local month and the user's default template. It refuses to replace an existing tab.
+- `advent-calendar --help` documents commands and options.
 
-- Connect to the existing spreadsheet using the Google Sheets API and a service account JSON key supplied locally. Share the spreadsheet with the service account and grant edit access; configure the spreadsheet ID and key path outside source control.
-- Read the sheet before updates, verify the requested date/task mapping, and write only the relevant completion cell.
-- For month creation, check for an existing month sheet before creating one. Require an explicit overwrite strategy if a sheet already exists; never replace it silently.
-- Show actionable errors for missing configuration, inaccessible sheets, absent rows/tasks, duplicate matches, and API/network failures. Do not report success unless the write is confirmed.
+## Spreadsheet Layout and Behavior
 
-## Display and Data Behavior
-
-Display should make the selected week, dates, goal labels, and completion state clear. By default, select the current week using the machine's local date. Preserve the spreadsheet's existing organization and values. Use native checkboxes and support unchecking. A `🎉` marker in column K indicates that a task's weekly target from the template has been reached.
+- Tabs use English `Month-Year` names, such as `October-2026`.
+- Column A contains bold task labels. Columns B:H are Monday through Sunday and are 87 pixels wide on new tabs. In-month task cells use their task's profile color; unused dates remain uncolored.
+- The weekday header row and task-name column are frozen. Native Boolean checkboxes are added only for dates in the month.
+- Column I contains a centered `🎉🎉🎉` marker when that task's weekly completion target is met. Its background becomes light green while the marker is shown.
+- `show` displays aligned task and date columns, with terminal-aware status colors and symbols. Non-terminal output has no ANSI color codes.
+- `complete` reads the sheet, finds exactly one date/task cell, and updates only that checkbox.
+- `month-init` checks for an existing tab before adding it, writes the calendar layout, and applies formatting.
 
 ## Acceptance Criteria
 
-- A user can view the existing sheet's state for the current week or a specified week.
-- A user can complete an existing goal and see the corresponding change reflected on a subsequent read.
-- A user can create a month sheet for new profiles and tasks without modifying other months.
-- Invalid and ambiguous requests fail clearly and do not write unintended cells.
-- Credentials and spreadsheet identifiers are not committed to the repository.
+- A local Cargo install produces an `advent-calendar` executable.
+- Setup saves configuration and creates the default template without overwriting user files.
+- OAuth and service-account authentication both work from saved configuration and environment overrides.
+- A user can view the current or selected week, update a unique task, and initialize a month without changing existing tabs.
+- Invalid configuration, inaccessible sheets, missing tasks, and ambiguous matches return actionable errors.
+- No credential contents are written to project configuration or source control.
 
-## MVP Notes
+## Implementation Notes
 
-- The Rust `google-sheets4` client handles the Sheets API; its `yup-oauth2` service-account authenticator handles local JSON credentials.
-- The MVP template format is documented in `README.md` and illustrated by `profile.example.json`.
-- Existing workbook locale and exact cell-value representation may differ from the screenshot. The MVP recognizes the displayed day-month date format and `Month-Year` tab convention; validate against the actual sheet before relying on writes.
+- Rust uses the 2024 edition. The Sheets API client and `yup-oauth2` provide API and authentication flows.
+- Existing spreadsheets must use the month tab naming and weekly row layout above for `show` and `complete` to locate cells.
+- Google OAuth consent and refresh-token policies apply to OAuth client deployments. Service-account keys should be used only when an app identity is needed and protected as credentials.
