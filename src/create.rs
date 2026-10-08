@@ -216,7 +216,7 @@ fn create_sheet_format_requests(
                         "startIndex": 1,
                         "endIndex": 8
                     },
-                    "properties": {"pixelSize": 80},
+                    "properties": {"pixelSize": 87},
                     "fields": "pixelSize"
                 }
             })
@@ -229,11 +229,6 @@ fn create_sheet_format_requests(
         for (task_idx, task) in template.tasks.iter().enumerate() {
             let row = header + task_idx + 1;
             let color = parse_color(&task.color).expect("template colors validated");
-            let day_color = (
-                (color.0 + 1.0) / 2.0,
-                (color.1 + 1.0) / 2.0,
-                (color.2 + 1.0) / 2.0,
-            );
             requests.push(serde_json::from_str(&json!({
                 "repeatCell": {
                     "range": {
@@ -302,9 +297,9 @@ fn create_sheet_format_requests(
                                     "cell": {
                                         "userEnteredFormat": {
                                             "backgroundColor": {
-                                                "red": day_color.0,
-                                                "green": day_color.1,
-                                                "blue": day_color.2
+                                                "red": color.0,
+                                                "green": color.1,
+                                                "blue": color.2
                                             }
                                         }
                                     },
