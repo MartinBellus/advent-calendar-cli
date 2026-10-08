@@ -1,0 +1,22 @@
+{
+  "tasks": [
+    {
+      "name": "Physical",
+      "emoji": "🏃",
+      "color": "#e06666",
+      "weekly_target": 3
+    },
+    {
+      "name": "Cooking",
+      "emoji": "🍲",
+      "color": "#93c47d",
+      "weekly_target": 2
+    },
+    {
+      "name": "Meditation",
+      "emoji": "🧘",
+      "color": "#c27ba0",
+      "weekly_target": 7
+    }
+  ]
+}
