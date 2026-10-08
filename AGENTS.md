@@ -29,6 +29,7 @@ Place focused unit tests beside the code they cover in `#[cfg(test)]` modules. P
 
 ## Commit & Pull Request Guidelines
 
+- Use `Codex` as the author name for commits created by this agent.
 - Commit multi-step work in small, focused chunks. After each coherent, reviewable slice is complete, commit it before moving on instead of waiting until the whole task is finished.
 - Keep each commit limited to related changes and use a concise imperative subject. Before wrapping up, check whether the requested changes are committed and report the resulting commit(s); do not leave the work uncommitted by default.
 
