@@ -3,6 +3,7 @@ use anyhow::{Context, Result, bail};
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
 use google_sheets4::api::ValueRange;
 use serde_json::Value;
+use std::io::IsTerminal;
 
 pub(crate) fn tab_name(year: i32, month: u32) -> String {
     NaiveDate::from_ymd_opt(year, month, 1)
@@ -113,6 +114,7 @@ pub(crate) async fn show_week(hub: &Hub, spreadsheet_id: &str, selected: NaiveDa
     }
     println!();
 
+    let color_status = std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none();
     for (row, label) in week_rows {
         print_task_cell(label.trim(), task_width);
         for target in &target_dates {
@@ -121,7 +123,13 @@ pub(crate) async fn show_week(hub: &Hub, spreadsheet_id: &str, selected: NaiveDa
                 .position(|date| *date == Some(*target))
                 .and_then(|day_col| row.get(day_col + 1))
                 .is_some_and(|value| value.eq_ignore_ascii_case("TRUE") || value == "✓");
-            print!(" {:^7}|", if checked { "✓" } else { "·" });
+            let marker = match (checked, color_status) {
+                (true, true) => "\x1b[1;32m✔\x1b[0m",
+                (false, true) => "\x1b[2;37m○\x1b[0m",
+                (true, false) => "✔",
+                (false, false) => "○",
+            };
+            print!("    {marker}   |");
         }
         println!();
     }
