@@ -94,12 +94,12 @@ pub(crate) async fn show_week(hub: &Hub, spreadsheet_id: &str, selected: NaiveDa
 
     let task_width = week_rows
         .iter()
-        .map(|(_, label)| label.chars().count())
+        .map(|(_, label)| terminal_width(label))
         .max()
         .unwrap_or(4)
-        .max(4);
+        .max(terminal_width("Task"));
     println!("{title} · Week of {}", monday.format("%A, %B %-d, %Y"));
-    print!("{:<task_width$} |", "Task");
+    print_task_cell("Task", task_width);
     for date in &target_dates {
         print!(
             " {:^7}|",
@@ -114,7 +114,7 @@ pub(crate) async fn show_week(hub: &Hub, spreadsheet_id: &str, selected: NaiveDa
     println!();
 
     for (row, label) in week_rows {
-        print!("{label:<task_width$} |", label = label.trim());
+        print_task_cell(label.trim(), task_width);
         for target in &target_dates {
             let checked = dates
                 .iter()
@@ -126,6 +126,46 @@ pub(crate) async fn show_week(hub: &Hub, spreadsheet_id: &str, selected: NaiveDa
         println!();
     }
     Ok(())
+}
+
+fn print_task_cell(label: &str, width: usize) {
+    print!(
+        "{label}{} |",
+        " ".repeat(width.saturating_sub(terminal_width(label)))
+    );
+}
+
+fn terminal_width(text: &str) -> usize {
+    text.chars().map(terminal_char_width).sum()
+}
+
+fn terminal_char_width(character: char) -> usize {
+    let code = character as u32;
+    if character.is_control()
+        || matches!(
+            code,
+            0x0300..=0x036f | 0x200d | 0xfe00..=0xfe0f | 0x1f3fb..=0x1f3ff
+        )
+    {
+        return 0;
+    }
+    if matches!(
+        code,
+        0x1100..=0x115f
+            | 0x2e80..=0xa4cf
+            | 0xac00..=0xd7a3
+            | 0xf900..=0xfaff
+            | 0xfe10..=0xfe19
+            | 0xfe30..=0xfe6f
+            | 0xff00..=0xff60
+            | 0xffe0..=0xffe6
+            | 0x1f300..=0x1faff
+            | 0x20000..=0x3fffd
+    ) {
+        2
+    } else {
+        1
+    }
 }
 
 fn weekday_label(day: Weekday) -> &'static str {
