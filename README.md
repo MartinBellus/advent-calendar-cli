@@ -31,6 +31,6 @@ cargo run -- month-init --month 2026-11 --template profile.example.json
 
 ## Profile Template
 
-Pass a JSON file containing a `tasks` array. Each task has a unique `name`, optional `emoji`, hex background `color` (`#RRGGBB`), and a `weekly_target` from 0 to 7. New month tabs get one row per task per week, native checkboxes for in-month dates, a task color across the label and weekday cells, and a centered `🎉` marker in column I with a light-green background when that task's weekly target is met. The weekday header row and task-name column stay frozen while scrolling. See [profile.example.json](profile.example.json).
+Pass a JSON file containing a `tasks` array. Each task has a unique `name`, optional `emoji`, hex background `color` (`#RRGGBB`), and a `weekly_target` from 0 to 7. New month tabs get one row per task per week, native checkboxes for in-month dates, a task color across the label and weekday cells, bold task names, and a centered `🎉🎉🎉` marker in column I with a light-green background when that task's weekly target is met. Weekday columns are narrowed to keep the calendar compact. The weekday header row and task-name column stay frozen while scrolling. See [profile.example.json](profile.example.json).
 
 The implementation uses weekday columns B:H, labels in A, and the celebration marker in I. Existing workbook tabs should use the same month-year naming and weekly row layout for `show` and `complete` to locate cells.

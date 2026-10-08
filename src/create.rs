@@ -104,7 +104,7 @@ pub(crate) async fn create_month(
                 }
             }
             grid[row][8] = Value::String(format!(
-                "=IF(COUNTIF(B{}:H{},TRUE)>={},\"🎉\",\"\")",
+                "=IF(COUNTIF(B{}:H{},TRUE)>={},\"🎉🎉🎉\",\"\")",
                 row + 1,
                 row + 1,
                 task.weekly_target
@@ -206,6 +206,24 @@ fn create_sheet_format_requests(
     let block = template.tasks.len() + 1;
     let mut requests = Vec::new();
     let mut celebration_ranges = Vec::new();
+    requests.push(
+        serde_json::from_str(
+            &json!({
+                "updateDimensionProperties": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": 1,
+                        "endIndex": 8
+                    },
+                    "properties": {"pixelSize": 80},
+                    "fields": "pixelSize"
+                }
+            })
+            .to_string(),
+        )
+        .expect("valid weekday column width request"),
+    );
     for week in 0..weeks {
         let header = 1 + week * block;
         for (task_idx, task) in template.tasks.iter().enumerate() {
@@ -228,6 +246,30 @@ fn create_sheet_format_requests(
                     "fields": "userEnteredFormat.backgroundColor"
                 }
             }).to_string()).expect("valid repeatCell request"));
+
+            requests.push(
+                serde_json::from_str(
+                    &json!({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": row,
+                                "endRowIndex": row + 1,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 1
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "textFormat": {"bold": true}
+                                }
+                            },
+                            "fields": "userEnteredFormat.textFormat.bold"
+                        }
+                    })
+                    .to_string(),
+                )
+                .expect("valid bold task label request"),
+            );
 
             requests.push(
                 serde_json::from_str(
@@ -299,7 +341,7 @@ fn create_sheet_format_requests(
                         "booleanRule": {
                             "condition": {
                                 "type": "TEXT_EQ",
-                                "values": [{"userEnteredValue": "🎉"}]
+                                "values": [{"userEnteredValue": "🎉🎉🎉"}]
                             },
                             "format": {
                                 "backgroundColor": {
