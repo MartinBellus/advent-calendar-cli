@@ -34,6 +34,7 @@ Run `advent-calendar setup --spreadsheet-id ID`; OAuth is the default and the ap
 
 - `advent-calendar setup --spreadsheet-id ID` saves the selected spreadsheet ID and uses OAuth by default.
 - `advent-calendar setup --spreadsheet-id ID --service-account-key FILE` saves service-account configuration.
+- `advent-calendar reset-settings` confirms before deleting the user's configuration directory and stored OAuth tokens; `--yes` skips confirmation.
 - `advent-calendar show [--week YYYY-MM-DD]` displays the Monday-through-Sunday week containing the date. It defaults to the current local week.
 - `advent-calendar complete --task TASK [--date YYYY-MM-DD] [--uncheck]` checks a task for today or the selected date. Task matching is case-insensitive and accepts a task label with or without its trailing emoji. Missing and ambiguous matches fail without writing.
 - `advent-calendar month-init [--month YYYY-MM] [--template FILE]` initializes a new tab. It defaults to the current local month and the user's default template. It refuses to replace an existing tab.

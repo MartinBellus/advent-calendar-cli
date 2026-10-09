@@ -24,6 +24,12 @@ pub(crate) enum Command {
         #[arg(long)]
         service_account_key: Option<PathBuf>,
     },
+    /// Delete this user's saved settings, templates, and Google OAuth tokens.
+    ResetSettings {
+        /// Skip the confirmation prompt.
+        #[arg(long)]
+        yes: bool,
+    },
     /// Display a week (defaults to the current week).
     Show {
         /// Any date in the week to display (YYYY-MM-DD).

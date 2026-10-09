@@ -81,6 +81,20 @@ pub(crate) fn setup(
     Ok(path)
 }
 
+pub(crate) fn clear_user_settings() -> Result<()> {
+    let directory = config_dir()?;
+    match fs::remove_dir_all(&directory) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error).with_context(|| {
+            format!(
+                "Could not remove settings directory {}",
+                directory.display()
+            )
+        }),
+    }
+}
+
 fn canonicalize_option(path: Option<PathBuf>, description: &str) -> Result<Option<PathBuf>> {
     path.map(|path| {
         fs::canonicalize(&path)

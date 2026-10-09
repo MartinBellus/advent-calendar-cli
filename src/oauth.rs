@@ -316,6 +316,17 @@ fn store_tokens(tokens: &Tokens) -> Result<()> {
         .context("Could not save OAuth tokens to OS credential store")
 }
 
+pub(crate) fn clear_tokens() -> Result<()> {
+    let entry =
+        keyring::Entry::new(SERVICE, USER).context("Could not access OS credential store")?;
+    match entry.delete_credential() {
+        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+        Err(error) => {
+            Err(error).context("Could not delete Google OAuth tokens from OS credential store")
+        }
+    }
+}
+
 fn unix_now() -> Result<u64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())
 }

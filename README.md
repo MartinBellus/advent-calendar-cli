@@ -4,7 +4,7 @@ A command-line app for viewing and updating a Google Sheets habit calendar.
 
 ## Install
 
-From a checkout of this repository, install the executable with Rust and Cargo:
+From the repository root, `cargo install --path . --locked` builds this package from the local checkout using `Cargo.lock`, then copies the `advent-calendar` executable to Cargo's binary directory (usually `~/.cargo/bin`). Add that directory to your `PATH`. The OAuth client configuration is embedded at compile time, so an installed binary carries it without needing the repository files at runtime.
 
 ```sh
 cargo install --path . --locked
@@ -46,7 +46,10 @@ advent-calendar complete --date 2026-10-08 --task Physical
 advent-calendar complete --date 2026-10-08 --task Physical --uncheck
 advent-calendar month-init
 advent-calendar month-init --month 2026-11 --template profile.example.json
+advent-calendar reset-settings
 ```
+
+`reset-settings` asks for confirmation, then deletes the app's saved configuration and templates and removes its OAuth tokens from the OS credential store. Use `reset-settings --yes` to skip the prompt. It does not delete environment overrides or local OAuth client JSON files.
 
 `show` defaults to the current week, Monday through Sunday, and prints a compact table. `complete` defaults to today; task matching is case-insensitive and accepts a label with or without its trailing emoji. `month-init` defaults to the current month and the user's default profile. It refuses to replace an existing tab.
 

@@ -31,6 +31,16 @@ async fn main() -> Result<()> {
             }
             return Ok(());
         }
+        Command::ResetSettings { yes } => {
+            if !yes && !confirm_settings_reset()? {
+                println!("Settings reset cancelled.");
+                return Ok(());
+            }
+            oauth::clear_tokens()?;
+            config::clear_user_settings()?;
+            println!("Saved settings, templates, and Google OAuth tokens were deleted.");
+            return Ok(());
+        }
         command => command,
     };
 
@@ -39,7 +49,9 @@ async fn main() -> Result<()> {
     let sheets = connect(&config).await?;
 
     match command {
-        Command::Setup { .. } => unreachable!("setup command returned above"),
+        Command::Setup { .. } | Command::ResetSettings { .. } => {
+            unreachable!("settings command returned above")
+        }
         Command::Show { week } => {
             calendar::show_week(
                 &sheets,
@@ -68,4 +80,17 @@ async fn main() -> Result<()> {
             create::create_month(&sheets, &spreadsheet_id, month, &template).await
         }
     }
+}
+
+fn confirm_settings_reset() -> Result<bool> {
+    use std::io::{self, Write};
+
+    print!("Delete saved settings, templates, and Google OAuth tokens? [y/N] ");
+    io::stdout().flush()?;
+    let mut answer = String::new();
+    io::stdin().read_line(&mut answer)?;
+    Ok(matches!(
+        answer.trim().to_ascii_lowercase().as_str(),
+        "y" | "yes"
+    ))
 }
