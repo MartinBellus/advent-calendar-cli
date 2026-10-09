@@ -31,8 +31,8 @@ Place focused unit tests beside the code they cover in `#[cfg(test)]` modules. P
 
 - Keep the repository owner as the author; do not use `Codex` as the author name.
 - Add `Co-authored-by: Codex <noreply@openai.com>` to commits created by this agent.
-- Commit multi-step work in small, focused chunks. After each coherent, reviewable slice is complete, commit it before moving on instead of waiting until the whole task is finished.
-- Keep each commit limited to related changes and use a concise imperative subject. Before wrapping up, check whether the requested changes are committed and report the resulting commit(s); do not leave the work uncommitted by default.
+- Stage completed changes in focused, reviewable chunks and show the staged diff to the user.
+- Do not commit until the user explicitly confirms. After confirmation, keep commits limited to related changes, use a concise imperative subject, and report the resulting commit.
 
 ## Configuration & Generated Files
 

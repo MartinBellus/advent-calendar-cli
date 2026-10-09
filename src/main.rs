@@ -10,27 +10,11 @@ use chrono::{Datelike, Local};
 use clap::Parser;
 use cli::{Cli, Command};
 use sheets::connect;
-use std::process::ExitCode;
 
 #[tokio::main]
-async fn main() -> ExitCode {
+async fn main() -> Result<()> {
     let cli = Cli::parse();
-    let verbose = cli.verbose;
-    match execute(cli.command).await {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
-            if verbose {
-                eprintln!("{error:#}");
-            } else {
-                eprintln!("{error}");
-            }
-            ExitCode::FAILURE
-        }
-    }
-}
-
-async fn execute(command: Command) -> Result<()> {
-    let command = match command {
+    let command = match cli.command {
         Command::Setup {
             spreadsheet_id,
             service_account_key,
