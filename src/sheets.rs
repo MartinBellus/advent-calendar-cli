@@ -46,7 +46,16 @@ pub(crate) async fn read_values(
         .value_render_option("FORMATTED_VALUE")
         .doit()
         .await
-        .with_context(|| format!("Could not read tab '{title}'"))?;
+        .map_err(|error| {
+            let context = if is_not_found(&error) {
+                format!(
+                    "Tab '{title}' was not found. Create it with `advent-calendar month-init` or check the spreadsheet ID"
+                )
+            } else {
+                format!("Could not read tab '{title}'")
+            };
+            anyhow::Error::new(error).context(context)
+        })?;
     Ok(response
         .values
         .unwrap_or_default()
@@ -61,6 +70,20 @@ pub(crate) async fn read_values(
                 .collect()
         })
         .collect())
+}
+
+fn is_not_found(error: &google_sheets4::Error) -> bool {
+    match error {
+        google_sheets4::Error::BadRequest(body) => {
+            body.pointer("/error/code")
+                .and_then(serde_json::Value::as_i64)
+                == Some(404)
+        }
+        google_sheets4::Error::Failure(response) => {
+            response.status() == hyper::StatusCode::NOT_FOUND
+        }
+        _ => false,
+    }
 }
 
 pub(crate) fn quote_tab(title: &str) -> String {

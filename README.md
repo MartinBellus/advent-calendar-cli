@@ -53,6 +53,8 @@ advent-calendar reset-settings
 
 `show` defaults to the current week, Monday through Sunday, and prints a compact table. `complete` defaults to today; task matching is case-insensitive and accepts a label with or without its trailing emoji. `month-init` defaults to the current month and the user's default profile. It refuses to replace an existing tab.
 
+Errors show a short summary by default. Add `-v` (for example, `advent-calendar -v show`) to print the full error chain. If the selected month tab is missing, create it with `advent-calendar month-init`.
+
 ## Profiles and Sheet Layout
 
 Setup installs the example profile at `templates/default.json` in the user config directory if it does not already exist. Edit that copy to customize `month-init`; updates never overwrite it. Each profile has a `tasks` array with unique task names, optional emojis, `#RRGGBB` colors, and weekly targets from 0 to 7. Pass `--template FILE` to use another profile.
