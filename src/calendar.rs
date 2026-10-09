@@ -192,7 +192,7 @@ pub(crate) async fn set_completion(
     hub: &Hub,
     spreadsheet_id: &str,
     date: NaiveDate,
-    task: &str,
+    task: Option<&str>,
     checked: bool,
 ) -> Result<()> {
     let title = tab_name(date.year(), date.month());
@@ -215,39 +215,95 @@ pub(crate) async fn set_completion(
         .find(|(_, row)| row_dates(row, year, month).iter().any(Option::is_some))
         .map(|(idx, _)| idx)
         .unwrap_or(values.len());
-    let matches: Vec<(usize, usize)> = values[header.0 + 1..next_header]
+    let task_rows: Vec<(usize, &str)> = values[header.0 + 1..next_header]
         .iter()
         .enumerate()
         .filter_map(|(offset, row)| {
             row.first()
-                .is_some_and(|value| labels_match(value, task))
-                .then_some((header.0 + offset + 2, header.1 + 2))
+                .filter(|label| !label.trim().is_empty())
+                .map(|label| (header.0 + offset + 2, label.as_str()))
         })
         .collect();
-    if matches.is_empty() {
-        bail!("Task '{task}' or date {date} was not found in tab '{title}'");
-    }
-    if matches.len() > 1 {
-        bail!("Task '{task}' occurs more than once for {date}; the sheet layout is ambiguous");
-    }
-    let (row, column) = matches[0];
-    let range = format!("{}!{}{}", quote_tab(&title), column_label(column), row);
-    let request = ValueRange {
-        major_dimension: Some("ROWS".to_string()),
-        values: Some(vec![vec![Value::Bool(checked)]]),
-        ..Default::default()
+    let selected = if let Some(task) = task {
+        let matches: Vec<_> = task_rows
+            .iter()
+            .filter(|(_, label)| labels_match(label, task))
+            .collect();
+        if matches.len() > 1 {
+            bail!("Task '{task}' occurs more than once for {date}; the sheet layout is ambiguous");
+        }
+        matches.first().map(|(row, label)| vec![(*row, *label)])
+    } else {
+        Some(prompt_for_tasks(&task_rows, date)?)
     };
-    hub.spreadsheets()
-        .values_update(request, spreadsheet_id, &range)
-        .value_input_option("USER_ENTERED")
-        .doit()
-        .await
-        .with_context(|| format!("Could not update {task} for {date}"))?;
-    println!(
-        "{} '{task}' for {date}",
-        if checked { "Checked" } else { "Unchecked" }
-    );
+    let Some(selected) = selected else {
+        bail!(
+            "Task '{}' or date {date} was not found in tab '{title}'",
+            task.unwrap_or("")
+        );
+    };
+    let column = header.1 + 2;
+    for (row, task) in selected {
+        let range = format!("{}!{}{}", quote_tab(&title), column_label(column), row);
+        let request = ValueRange {
+            major_dimension: Some("ROWS".to_string()),
+            values: Some(vec![vec![Value::Bool(checked)]]),
+            ..Default::default()
+        };
+        hub.spreadsheets()
+            .values_update(request, spreadsheet_id, &range)
+            .value_input_option("USER_ENTERED")
+            .doit()
+            .await
+            .with_context(|| format!("Could not update {task} for {date}"))?;
+        println!(
+            "{} '{task}' for {date}",
+            if checked { "Checked" } else { "Unchecked" }
+        );
+    }
     Ok(())
+}
+
+fn prompt_for_tasks<'a>(
+    tasks: &'a [(usize, &'a str)],
+    date: NaiveDate,
+) -> Result<Vec<(usize, &'a str)>> {
+    use std::io::{self, Write};
+
+    if tasks.is_empty() {
+        bail!("No tasks were found for {date}");
+    }
+    if !io::stdin().is_terminal() {
+        bail!("Specify --task when input is not an interactive terminal");
+    }
+
+    println!("Tasks available for {date}:");
+    for (index, (_, label)) in tasks.iter().enumerate() {
+        println!("  {}) {}", index + 1, label.trim());
+    }
+    print!("Choose tasks [1-{}, comma-separated]: ", tasks.len());
+    io::stdout().flush()?;
+    let mut answer = String::new();
+    io::stdin().read_line(&mut answer)?;
+    let mut choices = Vec::new();
+    for part in answer.split(',') {
+        let choice = part
+            .trim()
+            .parse::<usize>()
+            .ok()
+            .filter(|choice| (1..=tasks.len()).contains(choice))
+            .ok_or_else(|| anyhow::anyhow!("Invalid task selection"))?;
+        if !choices.contains(&choice) {
+            choices.push(choice);
+        }
+    }
+    if choices.is_empty() {
+        bail!("Select at least one task");
+    }
+    Ok(choices
+        .into_iter()
+        .map(|choice| tasks[choice - 1])
+        .collect())
 }
 
 fn column_label(mut column: usize) -> String {

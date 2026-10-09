@@ -44,8 +44,9 @@ pub(crate) enum Command {
         /// Date to update (defaults to today).
         #[arg(long)]
         date: Option<NaiveDate>,
+        /// Task to update. If omitted, choose from tasks available on the date.
         #[arg(long)]
-        task: String,
+        task: Option<String>,
         /// Clear the checkbox instead of checking it.
         #[arg(long)]
         uncheck: bool,

@@ -96,7 +96,8 @@ async fn execute(command: Command) -> Result<()> {
             uncheck,
         } => {
             let date = date.unwrap_or_else(|| Local::now().date_naive());
-            calendar::set_completion(&sheets, &spreadsheet_id, date, &task, !uncheck).await
+            calendar::set_completion(&sheets, &spreadsheet_id, date, task.as_deref(), !uncheck)
+                .await
         }
         Command::MonthInit { month, template } => {
             let month = month.unwrap_or_else(|| {

@@ -41,6 +41,7 @@ The bundled OAuth client configuration can be overridden for development with a 
 ```sh
 advent-calendar show
 advent-calendar show --week 2026-10-08
+advent-calendar complete
 advent-calendar complete --task Physical
 advent-calendar complete --date 2026-10-08 --task Physical
 advent-calendar complete --date 2026-10-08 --task Physical --uncheck
@@ -52,7 +53,7 @@ advent-calendar reset-settings
 
 `reset-settings` asks for confirmation, then deletes the app's saved configuration and templates and removes its OAuth tokens from the OS credential store. Use `reset-settings --yes` to skip the prompt. It does not delete environment overrides or local OAuth client JSON files.
 
-`show` defaults to the current week, Monday through Sunday, and prints a compact table. `complete` defaults to today; task matching is case-insensitive and accepts a label with or without its trailing emoji. `month-init` defaults to the current month and the user's default profile. It refuses to replace an existing tab.
+`show` defaults to the current week, Monday through Sunday, and prints a compact table. `complete` defaults to today; without `--task`, it lists tasks available on that date and accepts one or more comma-separated task numbers (for example, `1,3`). Task matching with `--task` is case-insensitive and accepts a label with or without its trailing emoji. `month-init` defaults to the current month and the user's default profile. It refuses to replace an existing tab.
 
 Errors show a short summary by default. Add `-v` (for example, `advent-calendar -v month-init`) to print the full error chain.
 
