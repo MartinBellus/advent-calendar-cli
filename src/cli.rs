@@ -10,6 +10,9 @@ use std::path::PathBuf;
     about = "View and update a Google Sheets habit calendar"
 )]
 pub(crate) struct Cli {
+    /// Show detailed error causes.
+    #[arg(short, long, global = true)]
+    pub(crate) verbose: bool,
     #[command(subcommand)]
     pub(crate) command: Command,
 }

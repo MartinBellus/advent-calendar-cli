@@ -39,6 +39,7 @@ Run `advent-calendar setup --spreadsheet-id ID`; OAuth is the default and the ap
 - `advent-calendar complete --task TASK [--date YYYY-MM-DD] [--uncheck]` checks a task for today or the selected date. Task matching is case-insensitive and accepts a task label with or without its trailing emoji. Missing and ambiguous matches fail without writing.
 - `advent-calendar month-init [--month YYYY-MM] [--template FILE]` initializes a new tab. It defaults to the current local month and the user's default template. It refuses to replace an existing tab.
 - `advent-calendar --help` documents commands and options.
+- Errors are concise by default; the global `-v`/`--verbose` flag prints the full error chain.
 
 ## Spreadsheet Layout and Behavior
 
