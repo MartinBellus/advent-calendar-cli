@@ -41,12 +41,17 @@ advent-calendar complete --date 2026-10-08 --task Physical --uncheck
 # Create this month's tab, or choose a month
 advent-calendar month-init
 advent-calendar month-init --month 2026-11
+
+# Load task names and colors from this month's connected sheet into the default template
+advent-calendar load
 ```
 
 `show` and `complete` default to today. `month-init` defaults to the current month and will not replace an existing tab. Use `--template FILE` with `month-init` to choose a profile.
 
+`load` reads the first calendar week in the current month's tab and overwrites the saved default template with its task names and colors. Use `--month YYYY-MM` to load another month's tab. Imported tasks use a weekly target of 0 because the sheet's celebration formulas do not reliably reveal the intended target.
+
 ## Template
 
-`month-init` uses a default template with the task names, emojis, colors, and weekly targets for the new month. Setup creates a copy at `templates/default.json` in the app's configuration directory. Edit that file to customize future month tabs, or make another JSON template and pass it with `--template FILE`.
+`month-init` uses a default template with task names, optional emojis, colors, and weekly targets for the new month. Setup creates a copy at `templates/default.json` in the app's configuration directory. Edit that file to customize future month tabs, or make another JSON template and pass it with `--template FILE`.
 
 For more options, run `advent-calendar --help` or `advent-calendar <command> --help`. Add `-v` before a command to see detailed error information.

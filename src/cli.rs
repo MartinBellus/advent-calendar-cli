@@ -60,8 +60,14 @@ pub(crate) enum Command {
         #[arg(long)]
         template: Option<PathBuf>,
     },
+    /// Load task settings from a month tab in the connected spreadsheet and save as the default template.
+    Load {
+        /// Month to read (YYYY-MM; defaults to the current month).
+        #[arg(long, value_parser = parse_month)]
+        month: Option<(i32, u32)>,
+    },
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, serde::Serialize)]
 pub(crate) struct ProfileTemplate {
     pub(crate) tasks: Vec<TaskTemplate>,
 }
@@ -71,7 +77,7 @@ pub(crate) fn parse_month(input: &str) -> std::result::Result<(i32, u32), String
     Ok((date.year(), date.month()))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, serde::Serialize)]
 pub(crate) struct TaskTemplate {
     pub(crate) name: String,
     #[serde(default)]

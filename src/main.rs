@@ -4,6 +4,7 @@ mod config;
 mod create;
 mod oauth;
 mod sheets;
+mod template_import;
 
 use anyhow::Result;
 use chrono::{Datelike, Local};
@@ -109,6 +110,22 @@ async fn execute(command: Command) -> Result<()> {
                 None => config.default_template_path()?,
             };
             create::create_month(&sheets, &spreadsheet_id, month, &template).await
+        }
+        Command::Load { month } => {
+            let (year, month) = month.unwrap_or_else(|| {
+                let today = Local::now().date_naive();
+                (today.year(), today.month())
+            });
+            let profile =
+                template_import::load_from_month(&sheets, &spreadsheet_id, (year, month)).await?;
+            let path = config.save_default_template(&serde_json::to_string_pretty(&profile)?)?;
+            println!(
+                "Loaded {} tasks from {} and saved the default template to {}",
+                profile.tasks.len(),
+                calendar::tab_name(year, month),
+                path.display()
+            );
+            Ok(())
         }
     }
 }

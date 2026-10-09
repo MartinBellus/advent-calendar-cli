@@ -53,6 +53,13 @@ impl AppConfig {
         }
         Ok(path)
     }
+
+    pub(crate) fn save_default_template(&self, contents: &str) -> Result<PathBuf> {
+        let path = self.default_template_path()?;
+        fs::write(&path, contents)
+            .with_context(|| format!("Could not save default template at {}", path.display()))?;
+        Ok(path)
+    }
 }
 
 pub(crate) fn setup(
