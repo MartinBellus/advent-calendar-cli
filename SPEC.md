@@ -46,7 +46,7 @@ Run `advent-calendar setup` to sign in with OAuth, choose a spreadsheet in Googl
 - Tabs use English `Month-Year` names, such as `October-2026`.
 - Column A contains bold task labels. Columns B:H are Monday through Sunday and are 87 pixels wide on new tabs. In-month task cells use their task's profile color; unused dates remain uncolored.
 - The weekday header row and task-name column are frozen. Native Boolean checkboxes are added only for dates in the month.
-- Column I contains a centered `🎉🎉🎉` marker when that task's weekly completion target is met. Its background becomes light green while the marker is shown.
+- Column I contains a centered `🎉🎉🎉` marker when that task's weekly completion target is met. For partial weeks at the start or end of a month, the target is prorated by the number of calendar days present and rounded up to a whole completion. Its background becomes light green while the marker is shown.
 - `show` displays aligned task and date columns, with terminal-aware status colors and symbols. Non-terminal output has no ANSI color codes.
 - `complete` reads the sheet, finds exactly one date/task cell, and updates only that checkbox.
 - `month-init` checks for an existing tab before adding it, writes the calendar layout, and applies formatting.

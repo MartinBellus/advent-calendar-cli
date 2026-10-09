@@ -54,4 +54,6 @@ advent-calendar load
 
 `month-init` uses a default template with task names, optional emojis, colors, and weekly targets for the new month. Setup creates a copy at `templates/default.json` in the app's configuration directory. Edit that file to customize future month tabs, or make another JSON template and pass it with `--template FILE`.
 
+For partial weeks at the start or end of a month, the celebration threshold is prorated by the number of calendar days present and rounded up to a whole completion.
+
 For more options, run `advent-calendar --help` or `advent-calendar <command> --help`. Add `-v` before a command to see detailed error information.

@@ -82,6 +82,12 @@ pub(crate) async fn create_month(
     }
     for week in 0..week_count {
         let header_row = 1 + week * block_height;
+        let days_in_week = (0..7)
+            .filter(|weekday| {
+                let day_number = (week * 7 + weekday + 1) as i32 - offset as i32;
+                (1..=day_count as i32).contains(&day_number)
+            })
+            .count();
         for weekday in 0..7 {
             let day_number = (week * 7 + weekday + 1) as i32 - offset as i32;
             if (1..=day_count as i32).contains(&day_number) {
@@ -104,11 +110,12 @@ pub(crate) async fn create_month(
                 }
             }
             if task.weekly_target > 0 {
+                let target = (task.weekly_target * days_in_week).div_ceil(7);
                 grid[row][8] = Value::String(format!(
                     "=IF(COUNTIF(B{}:H{},TRUE)>={},\"🎉🎉🎉\",\"\")",
                     row + 1,
                     row + 1,
-                    task.weekly_target
+                    target
                 ));
             }
         }
