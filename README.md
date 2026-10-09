@@ -14,15 +14,15 @@ This installs `advent-calendar` into Cargo's binary directory (usually `~/.cargo
 
 ## First-Time Setup
 
-OAuth is the default authentication method; the app includes its public Google OAuth Desktop client ID, so users do not need to create a Google Cloud client. On the first Sheets command the CLI opens Google sign-in in your browser, receives the authorization callback on localhost using PKCE, and stores access and refresh tokens in the operating system credential store (macOS Keychain, Windows Credential Manager, or Linux Secret Service). Expired access tokens refresh automatically. The scope requested is `https://www.googleapis.com/auth/drive.file`.
+OAuth is the default authentication method; the app includes its Google OAuth Desktop client configuration, so users do not need to create a Google Cloud client. The app requests the `https://www.googleapis.com/auth/drive.file` scope. Enable Google Picker API in the OAuth client's Google Cloud project. On first sign-in the CLI opens Google sign-in in your browser, receives the authorization callback on localhost using PKCE, and stores access and refresh tokens in the OS credential store (macOS Keychain, Windows Credential Manager, or Linux Secret Service). Expired access tokens refresh automatically.
 
-Run setup with the spreadsheet ID. The selected spreadsheet ID is saved in the user configuration directory. Service-account mode remains available for automation:
+Run setup to sign in, choose a spreadsheet in Google Picker, and save the selected ID and tokens:
 
 ```sh
-advent-calendar setup --spreadsheet-id 'your-spreadsheet-id'
+advent-calendar setup
 ```
 
-You can instead use a service account for automation or a shared calendar identity:
+Optionally pass `--spreadsheet-id ID` to filter the picker to a specific spreadsheet. For service-account automation, setup requires both the spreadsheet ID and key:
 
 ```sh
 advent-calendar setup \
@@ -46,6 +46,7 @@ advent-calendar complete --date 2026-10-08 --task Physical
 advent-calendar complete --date 2026-10-08 --task Physical --uncheck
 advent-calendar month-init
 advent-calendar month-init --month 2026-11 --template profile.example.json
+advent-calendar setup
 advent-calendar reset-settings
 ```
 

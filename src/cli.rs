@@ -20,9 +20,9 @@ pub(crate) struct Cli {
 pub(crate) enum Command {
     /// Save spreadsheet and authentication settings for this user.
     Setup {
-        /// Google Sheets ID from the spreadsheet URL.
+        /// Spreadsheet ID (required for service-account setup; filters the OAuth picker if supplied).
         #[arg(long)]
-        spreadsheet_id: String,
+        spreadsheet_id: Option<String>,
         /// Service account JSON key for automation or a shared calendar identity.
         #[arg(long)]
         service_account_key: Option<PathBuf>,

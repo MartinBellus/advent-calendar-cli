@@ -56,48 +56,15 @@ pub(crate) struct OAuthProvider {
 
 impl OAuthProvider {
     pub(crate) async fn connect() -> Result<Self> {
-        let connector = hyper_rustls::HttpsConnectorBuilder::new()
-            .with_native_roots()
-            .context("Could not load native TLS roots")?
-            .https_only()
-            .enable_http2()
-            .build();
-        let client: OAuthHttpClient = Client::builder(TokioExecutor::new()).build(connector);
-        let (raw, config_source) = if std::path::Path::new("credentials.json").exists() {
-            (
-                tokio::fs::read("credentials.json").await?,
-                "credentials.json",
-            )
-        } else if std::path::Path::new("client_secret.json").exists() {
-            (
-                tokio::fs::read("client_secret.json").await?,
-                "client_secret.json",
-            )
-        } else {
-            (
-                include_bytes!("../oauth_client.json").to_vec(),
-                "bundled OAuth client",
-            )
-        };
-        let value: serde_json::Value = serde_json::from_slice(&raw)
-            .with_context(|| format!("Could not parse {config_source} OAuth configuration"))?;
-        let details = value
-            .get("installed")
-            .or_else(|| value.get("web"))
-            .unwrap_or(&value);
-        let config: OAuthConfig = serde_json::from_value(details.clone())
-            .with_context(|| format!("Could not parse {config_source} OAuth client fields"))?;
-        anyhow::ensure!(
-            config.client_secret.is_some(),
-            "OAuth client configuration is missing client_secret"
-        );
+        let client = oauth_http_client()?;
+        let config = load_oauth_config().await?;
         let mut tokens = load_tokens().unwrap_or_else(|| Tokens {
             access_token: String::new(),
             refresh_token: String::new(),
             expires_at: 0,
         });
         if tokens.refresh_token.is_empty() {
-            tokens = authorize(&config, &client).await?;
+            tokens = authorize(&config, &client, false, None).await?.tokens;
             store_tokens(&tokens)?;
         }
         Ok(Self {
@@ -107,6 +74,18 @@ impl OAuthProvider {
             client,
             tokens: Arc::new(Mutex::new(tokens)),
         })
+    }
+
+    pub(crate) async fn authorize_and_pick_spreadsheet(
+        preferred_file_id: Option<&str>,
+    ) -> Result<String> {
+        let client = oauth_http_client()?;
+        let config = load_oauth_config().await?;
+        let result = authorize(&config, &client, true, preferred_file_id).await?;
+        store_tokens(&result.tokens)?;
+        result
+            .picked_file_id
+            .context("No spreadsheet was selected in Google Picker")
     }
 
     async fn refresh(&self, tokens: &mut Tokens) -> Result<()> {
@@ -165,7 +144,59 @@ struct TokenResponse {
     expires_in: u64,
 }
 
-async fn authorize(config: &OAuthConfig, client: &OAuthHttpClient) -> Result<Tokens> {
+struct AuthorizationResult {
+    tokens: Tokens,
+    picked_file_id: Option<String>,
+}
+
+fn oauth_http_client() -> Result<OAuthHttpClient> {
+    let connector = hyper_rustls::HttpsConnectorBuilder::new()
+        .with_native_roots()
+        .context("Could not load native TLS roots")?
+        .https_only()
+        .enable_http2()
+        .build();
+    Ok(Client::builder(TokioExecutor::new()).build(connector))
+}
+
+async fn load_oauth_config() -> Result<OAuthConfig> {
+    let (raw, config_source) = if std::path::Path::new("credentials.json").exists() {
+        (
+            tokio::fs::read("credentials.json").await?,
+            "credentials.json",
+        )
+    } else if std::path::Path::new("client_secret.json").exists() {
+        (
+            tokio::fs::read("client_secret.json").await?,
+            "client_secret.json",
+        )
+    } else {
+        (
+            include_bytes!("../oauth_client.json").to_vec(),
+            "bundled OAuth client",
+        )
+    };
+    let value: serde_json::Value = serde_json::from_slice(&raw)
+        .with_context(|| format!("Could not parse {config_source} OAuth configuration"))?;
+    let details = value
+        .get("installed")
+        .or_else(|| value.get("web"))
+        .unwrap_or(&value);
+    let config: OAuthConfig = serde_json::from_value(details.clone())
+        .with_context(|| format!("Could not parse {config_source} OAuth client fields"))?;
+    anyhow::ensure!(
+        config.client_secret.is_some(),
+        "OAuth client configuration is missing client_secret"
+    );
+    Ok(config)
+}
+
+async fn authorize(
+    config: &OAuthConfig,
+    client: &OAuthHttpClient,
+    pick_spreadsheet: bool,
+    preferred_file_id: Option<&str>,
+) -> Result<AuthorizationResult> {
     let listener = TcpListener::bind("127.0.0.1:0")
         .await
         .context("Could not start OAuth callback listener")?;
@@ -189,6 +220,15 @@ async fn authorize(config: &OAuthConfig, client: &OAuthHttpClient) -> Result<Tok
         .append_pair("state", &state)
         .append_pair("code_challenge", &challenge)
         .append_pair("code_challenge_method", "S256");
+    if pick_spreadsheet {
+        auth_url
+            .query_pairs_mut()
+            .append_pair("trigger_onepick", "true")
+            .append_pair("mimetypes", "application/vnd.google-apps.spreadsheet");
+        if let Some(file_id) = preferred_file_id {
+            auth_url.query_pairs_mut().append_pair("file_ids", file_id);
+        }
+    }
     open_browser(auth_url.as_str()).context("Could not open the system browser")?;
     println!("Complete Google sign-in in your browser; waiting for the localhost callback...");
     let (mut socket, _) = tokio::time::timeout(Duration::from_secs(120), listener.accept())
@@ -237,12 +277,19 @@ async fn authorize(config: &OAuthConfig, client: &OAuthHttpClient) -> Result<Tok
         .header("content-type", "application/x-www-form-urlencoded")
         .body(Full::new(Bytes::from(body)))?;
     let response: TokenResponse = token_http(client, req).await?;
-    Ok(Tokens {
-        access_token: response.access_token,
-        refresh_token: response
-            .refresh_token
-            .context("Google did not return a refresh token; retry authorization")?,
-        expires_at: unix_now()?.saturating_add(response.expires_in),
+    let picked_file_id = query
+        .get("picked_file_ids")
+        .and_then(|ids| ids.split(',').next())
+        .map(str::to_owned);
+    Ok(AuthorizationResult {
+        tokens: Tokens {
+            access_token: response.access_token,
+            refresh_token: response
+                .refresh_token
+                .context("Google did not return a refresh token; retry authorization")?,
+            expires_at: unix_now()?.saturating_add(response.expires_in),
+        },
+        picked_file_id,
     })
 }
 

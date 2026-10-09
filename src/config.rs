@@ -27,7 +27,7 @@ impl AppConfig {
             .ok()
             .or_else(|| self.spreadsheet_id.clone())
             .filter(|id| !id.trim().is_empty())
-            .context("Run `advent-calendar setup --spreadsheet-id ID` to configure the spreadsheet")
+            .context("Run `advent-calendar setup` to sign in and choose a spreadsheet")
     }
 
     pub(crate) fn service_account_key(&self) -> Option<PathBuf> {
@@ -67,6 +67,12 @@ pub(crate) fn setup(
         spreadsheet_id: Some(spreadsheet_id.trim().to_owned()),
         service_account_key,
     };
+    let path = write_config(&config)?;
+    config.default_template_path()?;
+    Ok(path)
+}
+
+fn write_config(config: &AppConfig) -> Result<PathBuf> {
     let path = config_path()?;
     let directory = path.parent().context("Configuration path has no parent")?;
     fs::create_dir_all(directory).with_context(|| {
@@ -75,9 +81,8 @@ pub(crate) fn setup(
             directory.display()
         )
     })?;
-    let contents = serde_json::to_string_pretty(&config)?;
+    let contents = serde_json::to_string_pretty(config)?;
     fs::write(&path, contents).with_context(|| format!("Could not write {}", path.display()))?;
-    config.default_template_path()?;
     Ok(path)
 }
 

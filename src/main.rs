@@ -36,14 +36,28 @@ async fn execute(command: Command) -> Result<()> {
             service_account_key,
         } => {
             let using_service_account = service_account_key.is_some();
+            let spreadsheet_id = if using_service_account {
+                spreadsheet_id.ok_or_else(|| {
+                    anyhow::anyhow!("--spreadsheet-id is required with --service-account-key")
+                })?
+            } else {
+                anyhow::ensure!(
+                    std::env::var_os("GOOGLE_SERVICE_ACCOUNT_KEY").is_none(),
+                    "Unset GOOGLE_SERVICE_ACCOUNT_KEY to configure browser OAuth"
+                );
+                anyhow::ensure!(
+                    std::env::var_os("GOOGLE_SHEETS_ID").is_none(),
+                    "Unset GOOGLE_SHEETS_ID so setup can save the spreadsheet selected in Google Picker"
+                );
+                oauth::OAuthProvider::authorize_and_pick_spreadsheet(spreadsheet_id.as_deref())
+                    .await?
+            };
             let path = config::setup(spreadsheet_id, service_account_key)?;
             println!("Configuration saved to {}", path.display());
             if using_service_account {
                 println!("Service-account authentication is configured.");
             } else {
-                println!(
-                    "The first Google Sheets command will open Google sign-in in your browser."
-                );
+                println!("Google sign-in and spreadsheet access are configured.");
             }
             return Ok(());
         }

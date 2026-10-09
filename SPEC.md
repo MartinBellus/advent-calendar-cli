@@ -13,9 +13,9 @@ Provide an installable, per-user command-line app for viewing and updating a Goo
 
 ## First-Time Setup and Configuration
 
-Run `advent-calendar setup --spreadsheet-id ID`; OAuth is the default and the app uses its bundled Desktop client configuration. Local `credentials.json` or `client_secret.json` files may override it for development. Service-account mode remains an explicit option and requires `--spreadsheet-id ID --service-account-key FILE`.
+Run `advent-calendar setup` to sign in with OAuth, choose a spreadsheet in Google Picker, and save the selected ID in the user configuration directory. `--spreadsheet-id ID` optionally filters the picker to a known file. OAuth uses the bundled Desktop client configuration; local `credentials.json` or `client_secret.json` files may override it for development. Service-account mode remains an explicit option and requires `advent-calendar setup --spreadsheet-id ID --service-account-key FILE`.
 
-- OAuth is the preferred mode for a person using the app on their own computer. On first Sheets use, the CLI starts an authorization-code flow with PKCE, opens the browser, and listens on localhost for the redirect. It requests `https://www.googleapis.com/auth/drive.file`; access and refresh tokens are stored in the OS credential store and expired access tokens are refreshed automatically.
+- OAuth is the preferred mode for a person using the app on their own computer. Setup uses Google Picker to authorize the selected spreadsheet with `https://www.googleapis.com/auth/drive.file`. The OAuth flow uses PKCE and a localhost callback; access and refresh tokens are stored in the OS credential store and expired access tokens are refreshed automatically.
 - Service-account credentials remain available for automation or shared-calendar identities. The spreadsheet must be shared with the service account, with edit access for write operations.
 - Setup stores the spreadsheet ID and optional service-account key path, not credential contents.
 - `GOOGLE_SHEETS_ID` and `GOOGLE_SERVICE_ACCOUNT_KEY` environment variables override corresponding saved settings. The app does not implicitly load `.env` files.
@@ -32,7 +32,7 @@ Run `advent-calendar setup --spreadsheet-id ID`; OAuth is the default and the ap
 
 ## CLI Workflows
 
-- `advent-calendar setup --spreadsheet-id ID` saves the selected spreadsheet ID and uses OAuth by default.
+- `advent-calendar setup [--spreadsheet-id ID]` runs browser OAuth and Google Picker, then saves the selected spreadsheet ID.
 - `advent-calendar setup --spreadsheet-id ID --service-account-key FILE` saves service-account configuration.
 - `advent-calendar reset-settings` confirms before deleting the user's configuration directory and stored OAuth tokens; `--yes` skips confirmation.
 - `advent-calendar show [--week YYYY-MM-DD]` displays the Monday-through-Sunday week containing the date. It defaults to the current local week.
