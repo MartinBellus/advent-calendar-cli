@@ -135,14 +135,19 @@ fn cell_background_color(row: &Value) -> Option<String> {
 }
 
 fn rgb_to_hex(rgb: &Value) -> Option<String> {
-    let channel = |name: &str| -> Option<u8> {
-        let value = rgb.get(name)?.as_f64()?.clamp(0.0, 1.0);
-        Some((value * 255.0).round() as u8)
+    let channel = |name: &str| -> u8 {
+        let value = rgb
+            .get(name)
+            .and_then(Value::as_f64)
+            .unwrap_or(0.0)
+            .clamp(0.0, 1.0);
+        (value * 255.0).round() as u8
     };
+    rgb.as_object()?;
     Some(format!(
         "#{:02x}{:02x}{:02x}",
-        channel("red")?,
-        channel("green")?,
-        channel("blue")?
+        channel("red"),
+        channel("green"),
+        channel("blue")
     ))
 }
