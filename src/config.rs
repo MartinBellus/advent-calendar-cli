@@ -5,7 +5,6 @@ use std::{env, fs, path::PathBuf};
 #[derive(Default, Deserialize, Serialize)]
 pub(crate) struct AppConfig {
     pub(crate) spreadsheet_id: Option<String>,
-    pub(crate) oauth_client_secret: Option<PathBuf>,
     pub(crate) service_account_key: Option<PathBuf>,
 }
 
@@ -29,12 +28,6 @@ impl AppConfig {
             .or_else(|| self.spreadsheet_id.clone())
             .filter(|id| !id.trim().is_empty())
             .context("Run `advent-calendar setup --spreadsheet-id ID` to configure the spreadsheet")
-    }
-
-    pub(crate) fn oauth_client_secret(&self) -> Option<PathBuf> {
-        env::var_os("GOOGLE_OAUTH_CLIENT_SECRET")
-            .map(PathBuf::from)
-            .or_else(|| self.oauth_client_secret.clone())
     }
 
     pub(crate) fn service_account_key(&self) -> Option<PathBuf> {
@@ -64,20 +57,14 @@ impl AppConfig {
 
 pub(crate) fn setup(
     spreadsheet_id: String,
-    oauth_client_secret: Option<PathBuf>,
     service_account_key: Option<PathBuf>,
 ) -> Result<PathBuf> {
     if spreadsheet_id.trim().is_empty() {
         bail!("Spreadsheet ID cannot be empty");
     }
-    if oauth_client_secret.is_some() == service_account_key.is_some() {
-        bail!("Choose exactly one of --oauth-client-secret or --service-account-key");
-    }
-    let oauth_client_secret = canonicalize_option(oauth_client_secret, "OAuth client file")?;
     let service_account_key = canonicalize_option(service_account_key, "service account key")?;
     let config = AppConfig {
         spreadsheet_id: Some(spreadsheet_id.trim().to_owned()),
-        oauth_client_secret,
         service_account_key,
     };
     let path = config_path()?;

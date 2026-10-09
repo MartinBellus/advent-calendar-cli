@@ -14,14 +14,12 @@ This installs `advent-calendar` into Cargo's binary directory (usually `~/.cargo
 
 ## First-Time Setup
 
-Enable the Google Sheets API in a Google Cloud project. For personal use, create an OAuth client with application type **Desktop app** and download its client JSON file. Google sign-in runs the first time you use a Sheets command; it prints a URL to open in your browser and stores refresh tokens in the operating system credential store (macOS Keychain, Windows Credential Manager, or Linux Secret Service).
+OAuth is the default authentication method; the app includes its public Google OAuth Desktop client ID, so users do not need to create a Google Cloud client. On the first Sheets command the CLI opens Google sign-in in your browser, receives the authorization callback on localhost using PKCE, and stores access and refresh tokens in the operating system credential store (macOS Keychain, Windows Credential Manager, or Linux Secret Service). Expired access tokens refresh automatically. The scope requested is `https://www.googleapis.com/auth/drive.file`.
 
-Save the spreadsheet ID from its URL and the OAuth client file path:
+Run setup with the spreadsheet ID. The selected spreadsheet ID is saved in the user configuration directory. Service-account mode remains available for automation:
 
 ```sh
-advent-calendar setup \
-  --spreadsheet-id 'your-spreadsheet-id' \
-  --oauth-client-secret "$HOME/Downloads/client_secret.json"
+advent-calendar setup --spreadsheet-id 'your-spreadsheet-id'
 ```
 
 You can instead use a service account for automation or a shared calendar identity:
@@ -34,7 +32,9 @@ advent-calendar setup \
 
 For service-account mode, share the spreadsheet with the service account's `client_email` and grant Editor access. Keep the JSON key outside the repository; setup stores only its path.
 
-Configuration is saved as `config.json` under the platform user config directory: `$XDG_CONFIG_HOME/advent-calendar` (normally `~/.config/advent-calendar`) on Linux, `~/Library/Application Support/advent-calendar` on macOS, or `%APPDATA%\\advent-calendar` on Windows. The default template is installed at `templates/default.json` in that directory. OAuth refresh tokens are stored in the OS credential store; Linux needs a Secret Service provider such as GNOME Keyring or KWallet. The app also accepts `GOOGLE_SHEETS_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_SERVICE_ACCOUNT_KEY` as environment overrides. It does not load `.env` files automatically.
+Configuration is saved as `config.json` under the platform user config directory: `$XDG_CONFIG_HOME/advent-calendar` (normally `~/.config/advent-calendar`) on Linux, `~/Library/Application Support/advent-calendar` on macOS, or `%APPDATA%\\advent-calendar` on Windows. The default template is installed at `templates/default.json` in that directory. OAuth tokens are stored in the OS credential store; Linux needs a Secret Service provider such as GNOME Keyring or KWallet. The app accepts `GOOGLE_SHEETS_ID` and `GOOGLE_SERVICE_ACCOUNT_KEY` as environment overrides. It does not load `.env` files automatically.
+
+The bundled OAuth client configuration can be overridden for development with a Google Desktop client JSON named `credentials.json` or `client_secret.json` in the current directory. Local client files and all per-user OAuth tokens are ignored by Git. The bundled client configuration is shared app configuration; access and refresh tokens remain private to each user in the OS credential store.
 
 ## Commands
 

@@ -2,8 +2,8 @@ mod calendar;
 mod cli;
 mod config;
 mod create;
+mod oauth;
 mod sheets;
-mod token_store;
 
 use anyhow::Result;
 use chrono::{Datelike, Local};
@@ -17,12 +17,18 @@ async fn main() -> Result<()> {
     let command = match cli.command {
         Command::Setup {
             spreadsheet_id,
-            oauth_client_secret,
             service_account_key,
         } => {
-            let path = config::setup(spreadsheet_id, oauth_client_secret, service_account_key)?;
+            let using_service_account = service_account_key.is_some();
+            let path = config::setup(spreadsheet_id, service_account_key)?;
             println!("Configuration saved to {}", path.display());
-            println!("The first Google Sheets command will sign in if OAuth is configured.");
+            if using_service_account {
+                println!("Service-account authentication is configured.");
+            } else {
+                println!(
+                    "The first Google Sheets command will open Google sign-in in your browser."
+                );
+            }
             return Ok(());
         }
         command => command,

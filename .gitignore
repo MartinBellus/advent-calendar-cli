@@ -2,3 +2,6 @@
 .env
 *.service-account.json
 service-account.json
+credentials.json
+oauth-config.json
+client_secret.json

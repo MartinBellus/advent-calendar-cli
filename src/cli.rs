@@ -20,9 +20,6 @@ pub(crate) enum Command {
         /// Google Sheets ID from the spreadsheet URL.
         #[arg(long)]
         spreadsheet_id: String,
-        /// Google OAuth desktop client JSON file.
-        #[arg(long)]
-        oauth_client_secret: Option<PathBuf>,
         /// Service account JSON key for automation or a shared calendar identity.
         #[arg(long)]
         service_account_key: Option<PathBuf>,

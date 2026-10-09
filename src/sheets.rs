@@ -1,11 +1,20 @@
 use crate::config::AppConfig;
 use anyhow::{Context, Result};
 use google_sheets4::{Sheets, hyper_rustls, hyper_util, yup_oauth2};
+use hyper_util::client::legacy::Client;
+use hyper_util::rt::TokioExecutor;
 
 pub(crate) type Hub =
     Sheets<hyper_rustls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector>>;
 pub(crate) async fn connect(config: &AppConfig) -> Result<Hub> {
-    let auth = if let Some(key_path) = config.service_account_key() {
+    let connector = hyper_rustls::HttpsConnectorBuilder::new()
+        .with_native_roots()
+        .context("Could not load native TLS roots")?
+        .https_only()
+        .enable_http2()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build(connector);
+    if let Some(key_path) = config.service_account_key() {
         let key = yup_oauth2::read_service_account_key(&key_path)
             .await
             .with_context(|| {
@@ -14,41 +23,15 @@ pub(crate) async fn connect(config: &AppConfig) -> Result<Hub> {
                     key_path.display()
                 )
             })?;
-        yup_oauth2::ServiceAccountAuthenticator::builder(key)
+        let auth = yup_oauth2::ServiceAccountAuthenticator::builder(key)
             .build()
             .await
-            .context("Could not initialize Google service account authentication")?
-    } else if let Some(client_secret_path) = config.oauth_client_secret() {
-        let client_secret = yup_oauth2::read_application_secret(&client_secret_path)
-            .await
-            .with_context(|| {
-                format!(
-                    "Could not read OAuth client file at {}",
-                    client_secret_path.display()
-                )
-            })?;
-        yup_oauth2::InstalledFlowAuthenticator::builder(
-            client_secret,
-            yup_oauth2::InstalledFlowReturnMethod::HTTPRedirect,
-        )
-        .with_storage(crate::token_store::oauth_storage())
-        .build()
-        .await
-        .context("Could not initialize Google OAuth sign-in")?
+            .context("Could not initialize Google service account authentication")?;
+        Ok(Sheets::new(client, auth))
     } else {
-        anyhow::bail!(
-            "Run `advent-calendar setup` with an OAuth client file or service account key"
-        )
-    };
-    let connector = hyper_rustls::HttpsConnectorBuilder::new()
-        .with_native_roots()
-        .context("Could not load native TLS roots")?
-        .https_only()
-        .enable_http2()
-        .build();
-    let client = hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
-        .build(connector);
-    Ok(Sheets::new(client, auth))
+        let auth = crate::oauth::OAuthProvider::connect().await?;
+        Ok(Sheets::new(client, auth))
+    }
 }
 
 pub(crate) async fn read_values(

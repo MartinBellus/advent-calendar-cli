@@ -13,14 +13,14 @@ Provide an installable, per-user command-line app for viewing and updating a Goo
 
 ## First-Time Setup and Configuration
 
-Run `advent-calendar setup --spreadsheet-id ID` with exactly one of `--oauth-client-secret FILE` or `--service-account-key FILE`.
+Run `advent-calendar setup --spreadsheet-id ID`; OAuth is the default and the app uses its bundled Desktop client configuration. Local `credentials.json` or `client_secret.json` files may override it for development. Service-account mode remains an explicit option and requires `--spreadsheet-id ID --service-account-key FILE`.
 
-- OAuth is the preferred mode for a person using the app on their own computer. The user supplies a Google OAuth desktop client JSON file; the first Sheets operation starts the installed-app browser flow and requests access as that Google user.
+- OAuth is the preferred mode for a person using the app on their own computer. On first Sheets use, the CLI starts an authorization-code flow with PKCE, opens the browser, and listens on localhost for the redirect. It requests `https://www.googleapis.com/auth/drive.file`; access and refresh tokens are stored in the OS credential store and expired access tokens are refreshed automatically.
 - Service-account credentials remain available for automation or shared-calendar identities. The spreadsheet must be shared with the service account, with edit access for write operations.
-- Setup stores the spreadsheet ID and credential-file path, not credential contents.
-- `GOOGLE_SHEETS_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_SERVICE_ACCOUNT_KEY` environment variables override corresponding saved settings. The app does not implicitly load `.env` files.
+- Setup stores the spreadsheet ID and optional service-account key path, not credential contents.
+- `GOOGLE_SHEETS_ID` and `GOOGLE_SERVICE_ACCOUNT_KEY` environment variables override corresponding saved settings. The app does not implicitly load `.env` files.
 - Configuration and user templates live in the platform user configuration directory. On Linux this is `$XDG_CONFIG_HOME/advent-calendar` or `~/.config/advent-calendar` when `XDG_CONFIG_HOME` is unset. On macOS use `~/Library/Application Support/advent-calendar`; on Windows use `%APPDATA%\\advent-calendar`.
-- OAuth refresh tokens are stored in the operating system credential store (macOS Keychain, Windows Credential Manager, or Linux Secret Service). Linux users need an available Secret Service provider. The OAuth client file and service-account key stay at their original paths and must not be committed.
+- OAuth access and refresh tokens are stored in the operating system credential store (macOS Keychain, Windows Credential Manager, or Linux Secret Service). Linux users need an available Secret Service provider. OAuth config files and service-account keys must not be committed.
 
 ## Templates
 
@@ -32,7 +32,7 @@ Run `advent-calendar setup --spreadsheet-id ID` with exactly one of `--oauth-cli
 
 ## CLI Workflows
 
-- `advent-calendar setup --spreadsheet-id ID --oauth-client-secret FILE` saves the spreadsheet and OAuth client configuration.
+- `advent-calendar setup --spreadsheet-id ID` saves the selected spreadsheet ID and uses OAuth by default.
 - `advent-calendar setup --spreadsheet-id ID --service-account-key FILE` saves service-account configuration.
 - `advent-calendar show [--week YYYY-MM-DD]` displays the Monday-through-Sunday week containing the date. It defaults to the current local week.
 - `advent-calendar complete --task TASK [--date YYYY-MM-DD] [--uncheck]` checks a task for today or the selected date. Task matching is case-insensitive and accepts a task label with or without its trailing emoji. Missing and ambiguous matches fail without writing.
@@ -60,6 +60,6 @@ Run `advent-calendar setup --spreadsheet-id ID` with exactly one of `--oauth-cli
 
 ## Implementation Notes
 
-- Rust uses the 2024 edition. The Sheets API client and `yup-oauth2` provide API and authentication flows.
+- Rust uses the 2024 edition. The Sheets API client provides API access; the OAuth module implements the PKCE authorization flow and refresh.
 - Existing spreadsheets must use the month tab naming and weekly row layout above for `show` and `complete` to locate cells.
 - Google OAuth consent and refresh-token policies apply to OAuth client deployments. Service-account keys should be used only when an app identity is needed and protected as credentials.
